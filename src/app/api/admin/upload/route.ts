@@ -81,7 +81,13 @@ export async function POST(req: Request) {
       rawPreview: questions.length === 0 ? text.slice(0, 2000) : undefined,
     });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Failed to process file";
-    return NextResponse.json({ error: msg }, { status: 500 });
+  console.error("Upload API Error:", e);
+
+  return NextResponse.json(
+    {
+      error: e instanceof Error ? e.message : String(e),
+    },
+    { status: 500 }
+  );
   }
 }
