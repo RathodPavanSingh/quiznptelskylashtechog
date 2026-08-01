@@ -5,10 +5,10 @@ import {
   parseRowsToQuestions,
   type ParsedQuestion,
 } from "@/lib/universal-parser";
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
+//import { mkdir, writeFile } from "fs/promises";
+//import path from "path";
 import crypto from "crypto";
-
+import{put} from "@vercel/blob";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -20,13 +20,24 @@ async function extractPdfPages(buf: Buffer): Promise<string[]> {
   const { text } = await extractText(pdf, { mergePages: false });
   return (Array.isArray(text) ? text : [text]).map((page) => String(page ?? ""));
 }
-
+/*
 async function persistPracticePdf(buf: Buffer): Promise<string> {
   const dir = path.join(process.cwd(), "public", "uploads", "practice");
   await mkdir(dir, { recursive: true });
   const name = `${Date.now()}-${crypto.randomBytes(8).toString("hex")}.pdf`;
   await writeFile(path.join(dir, name), buf);
   return `/api/practice/files/${name}`;
+}
+*/
+async function persistPracticePdf(buf: Buffer): Promise<string> {
+  const filename = `${Date.now()}-${crypto.randomBytes(8).toString("hex")}.pdf`;
+
+  const blob = await put(filename, buf, {
+    access: "public",
+    addRandomSuffix: false,
+  });
+
+  return blob.url;
 }
 
 async function parsePdfBuffer(

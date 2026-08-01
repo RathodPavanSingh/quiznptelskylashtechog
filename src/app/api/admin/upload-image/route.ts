@@ -1,3 +1,5 @@
+
+/*
 import { NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
@@ -47,4 +49,66 @@ function extForType(t: string, name: string): string {
   if (t === "image/svg+xml") return ".svg";
   const m = name.match(/\.[a-z0-9]{2,5}$/i);
   return m ? m[0].toLowerCase() : ".bin";
+}
+*/
+
+import { NextResponse } from "next/server";
+import { put } from "@vercel/blob";
+import crypto from "crypto";
+import path from "path";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
+const ALLOWED = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/jpg",
+  "image/webp",
+  "image/gif",
+  "image/svg+xml",
+]);
+
+const MAX_BYTES = 5 * 1024 * 1024;
+
+export async function POST(req: Request) {
+  try {
+    const fd = await req.formData();
+    const file = fd.get("file");
+
+    if (!(file instanceof File)) {
+      return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+    }
+
+    if (!ALLOWED.has(file.type)) {
+      return NextResponse.json({ error: "Unsupported image type" }, { status: 400 });
+    }
+
+    if (file.size > MAX_BYTES) {
+      return NextResponse.json({ error: "Image too large (max 5 MB)" }, { status: 400 });
+    }
+
+    const ext = path.extname(file.name) || ".bin";
+    const filename = `${Date.now()}-${crypto.randomBytes(10).toString("hex")}${ext}`;
+
+    const blob = await put(filename, file, {
+      access: "public",
+      addRandomSuffix: false,
+    });
+
+    return NextResponse.json({
+      url: blob.url,
+      size: file.size,
+      type: file.type,
+    });
+  } catch (e) {
+    console.error(e);
+
+    return NextResponse.json(
+      {
+        error: e instanceof Error ? e.message : "Upload failed",
+      },
+      { status: 500 }
+    );
+  }
 }

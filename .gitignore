@@ -1,5 +1,4 @@
 node_modules/
 .next/
 .env
-.drizzle.config.json
-public
+.drizzle.config.jso
